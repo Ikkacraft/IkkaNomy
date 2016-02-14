@@ -15,4 +15,8 @@ public class Account {
     public void setBalance(int balance) {
         this.balance = balance;
     }
+
+    public void add(int value) {
+        this.balance += value;
+    }
 }
