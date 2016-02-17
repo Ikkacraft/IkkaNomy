@@ -16,8 +16,13 @@ import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.text.Text;
+import webService.User;
+import webService.WebService;
+import webService.wsAccount;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @Plugin(
@@ -34,17 +39,19 @@ public class PluginCore {
 
     @Listener
     // Lorsque le serveur minecraft est lancé, on initialise le plugin
-    public void onServerStart(GameStartedServerEvent event) {
-        this.getLogger().info("IkkaNomy a recu l'instruction start");
+    public void onServerStart(GameStartedServerEvent event) throws IOException {
+        this.getLogger().info("Demarrage");
 
         /* Récupération des comptes */
-        accounts.put("2cb212c7-e192-4ec3-86bc-05e8ef3a286f", new Account(100));
-        accounts.put("vilia", new Account(100));
+        this.getLogger().info("Recuperation de tous les comptes");
+        getAllAccounts();
 
+        this.getLogger().info("Enregistrement des evenements");
         // Evènement PlayerConnect qui permet de la detection d'une nouvelle connexion au serveur
         EventListener<ClientConnectionEvent.Join> listenerOpenChest = new PlayerConnect(this);
         Sponge.getEventManager().registerListener(this, ClientConnectionEvent.Join.class, listenerOpenChest);
 
+        this.getLogger().info("Enregistrement des commandes");
         commandRegister();
     }
 
@@ -79,6 +86,28 @@ public class PluginCore {
 
     public Account getAccount(String accountName) {
         return accounts.get(accountName);
+    }
+
+    private void getAllAccounts() throws IOException {
+        WebService ws = new WebService(this);
+        List<User> users = ws.getAccounts();
+        List<wsAccount> wsAccounts = ws.getAllAccounts();
+        for(User user : users) {
+            int index = 0;
+            for(int i =0; i<=wsAccounts.size(); i++) {
+                if(wsAccounts.get(i).getAccount_id() == user.getAccount_id())
+                    index = i;
+                    break;
+            }
+            wsAccount tempAccount = wsAccounts.get(index);
+            accounts.put(user.getUuid().toString(), new Account(tempAccount.getAccount_balance(),
+                    tempAccount.getAccount_id(), tempAccount.getDescription()));
+            wsAccounts.remove(index);
+        }
+        for(wsAccount wsAccount : wsAccounts) {
+            accounts.putIfAbsent(wsAccount.getDescription(), new Account(wsAccount.getAccount_balance(),
+                    wsAccount.getAccount_id(), wsAccount.getDescription()));
+        }
     }
 
     private void commandRegister() {

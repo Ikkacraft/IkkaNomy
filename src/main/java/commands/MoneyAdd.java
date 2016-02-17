@@ -8,6 +8,9 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
+import webService.WebService;
+
+import java.io.IOException;
 
 public class MoneyAdd implements CommandExecutor {
     private PluginCore core;
@@ -35,6 +38,15 @@ public class MoneyAdd implements CommandExecutor {
             Player playerSource = (Player)commandSource;
             String message = accountName + " a reçu " + String.valueOf(montant) + ".";
             playerSource.sendMessage(Text.of(message));
+            WebService ws = new WebService(core);
+            try {
+                if(montant < 0)
+                    ws.postTransaction(montant*(-1), core.getAccount(uuid).getAccountID(), -1, "removed by administrator");
+                else
+                    ws.postTransaction(montant, -1, core.getAccount(uuid).getAccountID(), "given by administrator");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
             Player player = (Player)commandSource;
             player.sendMessage(Text.of("Le compte demandé n'existe pas"));
